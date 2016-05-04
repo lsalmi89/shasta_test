@@ -1,5 +1,5 @@
 #!/usr/bin/env python
-
+#herro
 # Plots ascii xcorr data from first iteration.
 # Check that directories are correct and that xcorr.* is correct data type.
 

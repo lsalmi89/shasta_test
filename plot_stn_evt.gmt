@@ -1,0 +1,51 @@
+#!/bin/bash
+# GMT script to plot great circle path 
+
+DEPTH=$1
+INPUT=mapout.${DEPTH}km.txt
+RIDGE=/data/temblor/kaiqing/Research/gmt_files/ridge.gmt
+TRENCH=/data/temblor/kaiqing/Research/gmt_files/trench.gmt
+TRANSFORM=/data/temblor/kaiqing/Research/gmt_files/transform.gmt
+CPTNM=/data/temblor/kaiqing/Tools/cpt-city/jjg/cbcont/div/cbcRdYlBu.cpt
+CPT=mycpt.tmp
+
+REGION=-R-180/180/-90/90
+REGION="-Rg"
+PROJ="-JN210/6i"
+B="-Ba30f15:.$info:"
+
+STNLIST=recepteur_loc.dat
+EVTLIST=source.stacking_loc.dat
+OUTPUT=map.evt_stn.${DEPTH}km.ps
+
+# Setting for map
+gmt gmtset MAP_FRAME_TYPE plain
+gmt gmtset PS_MEDIA letter
+
+# Create CPT file
+gmt makecpt -C$CPTNM -T-2.5/2.5/0.5 -Do -Z > $CPT
+gmt makecpt -Crainbow -T0/600/25 > evt.cpt
+
+# Create grd file
+awk '{print $1,$2,$3}' $INPUT | gmt surface $REGION -I1/1 -Gsur.grd
+
+# Plot basemap
+#gmt grdimage sur.grd $PROJ -C$CPT -Yc -Xc -K > $OUTPUT
+#gmt psbasemap $PROJ $REGION $B -Xc -Yc -O -K >> $OUTPUT
+gmt psbasemap $PROJ $REGION $B -Xc -Yc -K >> $OUTPUT
+#gmt pscoast $PROJ $REGION -Gtan -Slightcyan -Dc $B -W0.4 -A4000 -O -K >> $OUTPUT
+gmt pscoast $PROJ $REGION -Dc $B -W0.4 -A4000 -O -K >> $OUTPUT
+# Plot Stations and Events
+gmt psxy $STNLIST $PROJ $REGION -: -St0.2 -Gblack -Wthinnest -V -O -K >> $OUTPUT
+gmt psxy $EVTLIST $PROJ $REGION -: -Sc0.2 -Cevt.cpt -Gred -Wthinnest -V -O -K >> $OUTPUT
+gmt psxy $PROJ $REGION $RIDGE     -W0.5 -O -K >> $OUTPUT
+gmt psxy $PROJ $REGION $TRENCH    -W0.5 -O -K >> $OUTPUT
+gmt psxy $PROJ $REGION $TRANSFORM -W0.5 -O -K >> $OUTPUT
+
+#gmt psscale -D4i/-0.6i/3i/0.1ih -B:dlnVs[%]: -C$CPT -O -K >> $OUTPUT
+gmt psscale -D3i/-0.6i/2i/0.1ih -B100:'Source Depth': -Cevt.cpt -O >> $OUTPUT
+
+# Convert .ps file to .pdf
+gmt ps2raster -Tf -P -A $OUTPUT
+
+rm $OUTPUT

@@ -1,0 +1,47 @@
+#!/bin/bash
+#Plot model + APM
+DEPTH=$1
+OUTPUT=semucb.${DEPTH}km.ps
+INPUT=mapout.${DEPTH}km.txt
+
+GMT_FILES=/data/temblor/kaiqing/Research/gmt_files
+PLB=${GMT_FILES}/plate_boundaries.gmt
+RIDGE=${GMT_FILES}/ridge.gmt
+TRENCH=${GMT_FILES}/trench.gmt
+TRANSFORM=${GMT_FILES}/transform.gmt
+
+COLOR1=red
+COLOR2=blue
+COLOR3=black
+
+#gmt sets and var
+gmt gmtset PS_MEDIA letter
+gmt gmtset MAP_FRAME_TYPE plain
+
+REGION=-R0/360/-90/90
+PROJ=-JQ180/8.5i
+CPTNM=/data/temblor/kaiqing/Tools/cpt-city/jjg/cbcont/div/cbcRdYlBu.cpt
+CPT=mycpt.tmp
+
+#Creat CPT file
+gmt makecpt -C$CPTNM -T-2.5/2.5/0.5 -Do -Z > $CPT
+
+awk '{print $1,$2,$3}' $INPUT | gmt surface $REGION -I1/1 -Gsur.grd
+#awk '{print $1,$2,sqrt($4*$4+$7*$7)}' $INPUT | xyz2grd -R5/355/-85/85 -I10/10 -Gsur.grd
+
+gmt grdimage sur.grd $PROJ -C$CPT -Yc -Xc -K > $OUTPUT
+gmt pscoast $PROJ $REGION -Ba30f10 -Dc -W0.5,${COLOR3} -A10000 -O -K >> $OUTPUT
+
+gmt psxy $PROJ $REGION $RIDGE     -W1.5,black -O -K >> $OUTPUT
+gmt psxy $PROJ $REGION $TRENCH    -W1.5,black -O -K >> $OUTPUT
+gmt psxy $PROJ $REGION $TRANSFORM -W1.5,black -O -K >> $OUTPUT
+#psxy $PROJ $REGION $PLB -m -W5,black -O -K >> $OUTPUT
+#psxy $PROJ $REGION ~/Research/GMT_Resorce/oceanic_spreading_segments.xy -m -W5,green -O -K >> $OUTPUT
+
+gmt psscale -D4.25i/-0.6i/8.5i/0.3ih -B:dlnVs[%]: -C$CPT -O >> $OUTPUT
+
+gmt ps2raster -Tf -P $OUTPUT
+rm $OUTPUT
+
+#clean
+rm mycpt.tmp sur.grd gmt.conf gmt.history
